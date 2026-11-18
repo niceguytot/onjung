@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>온결 (On-gyeol) | 공간의 온도를 채우다</title>
+  <style>
+    :root {
+      --bg-color: #F7F5F0;
+      --card-bg: #FFFFFF;
+      --primary-green: #243B2E;
+      --accent-brown: #8C6D53;
+      --text-main: #1F2421;
+      --text-sub: #666A67;
+      --border-color: #E2DFD7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; }
+
+    /* 상단 네비게이션 (우측 QR코드 + 잠금 버튼 배치) */
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 24px; background: var(--bg-color); border-bottom: 1px solid var(--border-color);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-weight: 700; font-size: 20px; color: var(--primary-green); }
+    .header-right { display: flex; align-items: center; gap: 14px; }
+    .admin-trigger {
+      font-size: 12px; padding: 6px 12px; border: 1px solid var(--primary-green);
+      border-radius: 20px; background: transparent; color: var(--primary-green); cursor: pointer;
+    }
+    .qr-box {
+      display: flex; flex-direction: column; align-items: center;
+      background: #FFF; padding: 4px; border: 1px solid var(--border-color); border-radius: 8px;
+    }
+    .qr-box img { width: 64px; height: 64px; display: block; }
+    .qr-box span { font-size: 9px; font-weight: 700; color: var(--primary-green); margin-top: 2px; }
+
+    section { max-width: 760px; margin: 0 auto; padding: 52px 20px; border-bottom: 1px solid var(--border-color); }
+    .sec-label { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: var(--accent-brown); margin-bottom: 8px; }
+    h2 { font-size: 26px; font-weight: 700; color: var(--primary-green); margin-bottom: 12px; line-height: 1.3; }
+    .desc { font-size: 15px; color: var(--text-sub); margin-bottom: 28px; }
+
+    /* 히어로 영역 */
+    .hero { text-align: center; padding: 56px 20px; }
+    .hero h1 { font-size: 32px; font-weight: 700; color: var(--primary-green); margin-bottom: 16px; }
+    .hero p { font-size: 16px; color: var(--text-sub); }
+
+    /* [대표님 전용] 비밀번호 잠금 Onjung API 시뮬레이터 */
+    #consultantPanel {
+      display: none; background: #EDF2EE; border: 2px solid var(--primary-green);
+      border-radius: 16px; padding: 28px 20px; margin: 24px auto; max-width: 760px;
+    }
+    .upload-box {
+      border: 2px dashed var(--primary-green); border-radius: 12px; padding: 28px;
+      text-align: center; background: #FFF; cursor: pointer; margin: 16px 0;
+    }
+    .result-grid { display: none; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+    .result-grid img { width: 100%; border-radius: 10px; border: 1px solid var(--border-color); }
+
+    /* 7대 공간 파스텔 카드 */
+    .room-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+    }
+    .room-card {
+      border-radius: 16px; padding: 24px 12px; text-align: center; cursor: pointer;
+      transition: transform 0.2s; border: 2px solid transparent;
+    }
+    .room-card:hover { transform: translateY(-3px); }
+    .room-card.selected { border-color: var(--primary-green); }
+    .room-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+    .room-name { font-size: 15px; font-weight: 700; color: #1F2421; }
+
+    .c-bedroom { background: #CFC2F2; }
+    .c-living  { background: #B8D4EE; }
+    .c-kitchen { background: #47B881; }
+    .c-veranda { background: #9FD5E1; }
+    .c-bath    { background: #FFBA7A; }
+    .c-fridge  { background: #AEE0D6; }
+    .c-pantry  { background: #FFE394; }
+
+    .room-tip-box {
+      background: #FFF; border: 1px solid var(--border-color); border-radius: 12px;
+      padding: 16px 20px; font-size: 14px; color: var(--primary-green); display: none;
+    }
+
+    /* STEP 01~04 프로세스 */
+    .step-list { display: grid; gap: 16px; }
+    .step-item { background: #FFF; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); }
+    .step-item strong { color: var(--accent-brown); font-size: 13px; display: block; margin-bottom: 4px; }
+
+    /* 고객 문의 양식 */
+    .form-card {
+      background: #FFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 32px 24px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .form-group label span { color: #C94A4A; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border-color);
+      border-radius: 10px; font-size: 14px; background: #FAF9F6;
+    }
+    .privacy-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 16px 0 24px; }
+    .submit-btn {
+      width: 100%; padding: 16px; background: var(--primary-green); color: #FFF;
+      border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .room-grid { grid-template-columns: repeat(2, 1fr); }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">온결 (On-gyeol)</div>
+  <div class="header-right">
+    <button class="admin-trigger" onclick="unlockConsultantMode()">🔒 Onjung API</button>
+    <!-- 우측 상단 즉시 스캔 가능한 QR코드 (현재 페이지 주소 자동 연결) -->
+    <div class="qr-box" title="스마트폰 카메라로 스캔하면 온결 페이지가 열립니다">
+      <img id="headerQrImg" src="" alt="온결 접속 QR코드" />
+      <span>방문상담 QR</span>
+    </div>
+  </div>
+</header>
+
+<section class="hero" style="border-bottom:none;">
+  <div class="sec-label">SPACE & LIFE RECOVERY</div>
+  <h1>공간의 온도를 채우는<br>정리수납 컨설팅 '온결'</h1>
+  <p>체계적인 공간 분석과 맞춤형 수납 시스템으로 일상의 흐름을 바꿔드립니다.</p>
+</section>
+
+<!-- [대표님 전용] Onjung API 시뮬레이터 -->
+<div id="consultantPanel">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <strong style="color:var(--primary-green); font-size:18px;">✨ Onjung API 현장 시뮬레이터</strong>
+    <button onclick="document.getElementById('consultantPanel').style.display='none'" style="border:none;background:none;cursor:pointer;">닫기 ✕</button>
+  </div>
+  <p style="font-size:13px; color:#4A5550; margin:6px 0 12px;">현장 방문 시 비포 사진을 업로드하면 정리수납 1급 애프터 시안을 즉시 생성합니다.</p>
+  
+  <input type="password" id="apiKeyInput" placeholder="Onjung API Key 입력 (최초 1회 저장)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #CCC;margin-bottom:10px;" />
+  
+  <div class="upload-box" onclick="document.getElementById('photoInput').click()">
+    <strong id="fileLabel">📸 현장 비포(Before) 사진 업로드</strong>
+    <input type="file" id="photoInput" accept="image/*" style="display:none" />
+  </div>
+
+  <button class="submit-btn" id="apiRunBtn" onclick="runOnjungApi()">Onjung API 애프터 변환 실행 →</button>
+  <p id="apiLoading" style="display:none; text-align:center; margin-top:14px; font-weight:600; color:var(--primary-green);">⏳ Onjung API가 공간을 분석하여 정돈 중입니다 (약 10~15초)...</p>
+
+  <div class="result-grid" id="apiResultGrid">
+    <div><small>BEFORE (현장)</small><img id="imgBefore" /></div>
+    <div><small>AFTER (Onjung API 완료)</small><img id="imgAfter" /></div>
+  </div>
+</div>
+
+<!-- 1. 7대 공간 파스텔 카드 -->
+<section>
+  <div class="sec-label">01 SPACE BY SPACE</div>
+  <h2>공간마다 다른<br>정리의 기준을 세웁니다.</h2>
+  <p class="desc">정리가 필요한 공간을 터치해 온결만의 맞춤 솔루션을 확인해 보세요.</p>
+
+  <div class="room-grid">
+    <div class="room-card c-bedroom" onclick="showRoomTip('안방', '침구류 압축 보관 및 화장대·행거 동선 분리로 숙면 환경 조성', this)">
+      <span class="room-icon">🛏️</span><div class="room-name">안방</div>
+    </div>
+    <div class="room-card c-living" onclick="showRoomTip('거실', '공용 물품 정위치 지정 및 바닥 적치물 제거로 개방감 확보', this)">
+      <span class="room-icon">🛋️</span><div class="room-name">거실</div>
+    </div>
+    <div class="room-card c-kitchen" onclick="showRoomTip('주방', '조리 동선에 맞춘 골든존 식기 및 도구 최적 배치', this)">
+      <span class="room-icon">🍲</span><div class="room-name">주방</div>
+    </div>
+    <div class="room-card c-veranda" onclick="showRoomTip('베란다', '계절용품 규격 수납함 라벨링으로 창고화 방지', this)">
+      <span class="room-icon">🪟</span><div class="room-name">베란다</div>
+    </div>
+    <div class="room-card c-bath" onclick="showRoomTip('화장실', '습기 대응 바스켓 분류 및 욕실용품 최소화로 청소 용이', this)">
+      <span class="room-icon">🛁</span><div class="room-name">화장실</div>
+    </div>
+    <div class="room-card c-fridge" onclick="showRoomTip('냉장고', '식재료 전수 조사 및 유통기한별 투명 트레이 수납', this)">
+      <span class="room-icon">🧊</span><div class="room-name">냉장고</div>
+    </div>
+    <div class="room-card c-pantry" onclick="showRoomTip('팬트리', '선반 높이와 바구니 규격 통일로 재고 가시성 극대화', this)">
+      <span class="room-icon">🗄️</span><div class="room-name">팬트리</div>
+    </div>
+  </div>
+  <div class="room-tip-box" id="roomTipBox"></div>
+</section>
+
+<!-- 2. STEP 01~04 프로세스 -->
+<section>
+  <div class="sec-label">02 PROCESS</div>
+  <h2>체계적인 4단계 컨설팅 프로세스</h2>
+  <p class="desc">상담부터 사후 관리까지 온결이 책임지는 원스톱 시스템입니다.</p>
+  
+  <div class="step-list">
+    <div class="step-item"><strong>STEP 01</strong>사전 상담 및 공간 진단 (Onjung AI 시뮬레이션 활용)</div>
+    <div class="step-item"><strong>STEP 02</strong>물품 분류 및 불필요한 물건 비우기</div>
+    <div class="step-item"><strong>STEP 03</strong>동선 맞춤형 수납 시스템 구축 및 배치</div>
+    <div class="step-item"><strong>STEP 04</strong>유지 관리를 위한 1:1 맞춤 코칭 및 피드백</div>
+  </div>
+</section>
+
+<!-- 3. 방문 상담 문의 양식 (구글 시트 자동 저장 연동) -->
+<section id="inquirySection">
+  <div class="sec-label">03 CONSULTATION</div>
+  <h2>공간 변화의 시작,<br>지금 바로 신청하세요.</h2>
+  <p class="desc">아래 양식을 남겨주시면 현장 확인 후 맞춤 방문 상담을 도와드립니다.</p>
+
+  <form class="form-card" onsubmit="submitInquiry(event)">
+    <div class="form-group">
+      <label>이름 <span></span></label>
+      <input type="text" id="custName" placeholder="홍길동" required />
+    </div>
+    <div class="form-group">
+      <label>연락처 <span></span></label>
+      <input type="tel" id="custPhone" placeholder="010-0000-0000" required />
+    </div>
+    <div class="form-group">
+      <label>문의 유형 (희망 공간) <span></span></label>
+      <select id="custType">
+        <option value="전체 공간 정리수납">전체 공간 정리수납 (집 전체)</option>
+        <option value="안방/드레스룸">안방 · 옷장 집중 정리</option>
+        <option value="주방/냉장고/팬트리">주방 · 냉장고 · 팬트리</option>
+        <option value="거실/베란다/화장실">거실 · 베란다 · 화장실</option>
+        <option value="Onjung AI 동선 컨설팅">Onjung AI 맞춤 시뮬레이션 상담</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>문의 내용 <span></span></label>
+      <textarea id="custMsg" rows="4" placeholder="거주 평수, 가장 불편한 공간, 희망 방문 일정을 자유롭게 적어주세요." required></textarea>
+    </div>
+    <div class="privacy-row">
+      <input type="checkbox" id="privacyCheck" required style="width:auto;" />
+      <label for="privacyCheck" style="margin:0; font-weight:400;">개인정보 수집 및 이용(상담 목적)에 동의합니다. (필수)</label>
+    </div>
+    <button type="submit" class="submit-btn" id="submitBtn">방문 상담 신청하기 →</button>
+  </form>
+</section>
+
+<script>
+  // 페이지 로드 시 현재 URL 기반으로 우측 상단 QR코드 자동 생성
+  window.addEventListener("DOMContentLoaded", () => {
+    const currentUrl = encodeURIComponent(window.location.href);
+    document.getElementById("headerQrImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUrl}`;
+  });
+
+  // 1. 대표님 전용 비밀번호 잠금 해제 (비밀번호: 1004)
+  function unlockConsultantMode() {
+    const pw = prompt("Onjung API 접근 비밀번호를 입력하세요:");
+    if (pw === "1004") {
+      document.getElementById("consultantPanel").style.display = "block";
+      const saved = localStorage.getItem("onjung_api_key");
+      if (saved) document.getElementById("apiKeyInput").value = saved;
+    } else if (pw !== null) {
+      alert("비밀번호가 일치하지 않습니다.");
+    }
+  }
+
+  // 2. 공간 카드 클릭 시 팁 표시
+  function showRoomTip(room, tip, el) {
+    document.querySelectorAll(".room-card").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    const box = document.getElementById("roomTipBox");
+    box.style.display = "block";
+    box.innerHTML = `<strong>[${room} 정리 포인트]</strong> ${tip}`;
+  }
+
+  // 3. 고객 문의 구글 스프레드시트 실시간 자동 저장
+  async function submitInquiry(e) {
+    e.preventDefault();
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.innerText = "접수 중입니다...";
+
+    const formData = {
+      name: document.getElementById("custName").value,
+      phone: document.getElementById("custPhone").value,
+      type: document.getElementById("custType").value,
+      message: document.getElementById("custMsg").value,
+      date: new Date().toLocaleString("ko-KR")
+    };
+
+    // 💡 민수씨: 아래 따옴표 안에 대표님의 구글 Apps Script 웹앱 배포 URL을 붙여넣으세요!
+    const GOOGLE_SCRIPT_URL = "여기에_구글_시트_웹앱_URL_입력";
+
+    try {
+      if (GOOGLE_SCRIPT_URL.startsWith("http")) {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData)
+        });
+      }
+      alert(`${formData.name}님, 방문 상담 신청이 정상 접수되었습니다. 확인 후 빠르게 연락드리겠습니다.`);
+      e.target.reset();
+    } catch (err) {
+      alert("접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      btn.disabled = false;
+      btn.innerText = "방문 상담 신청하기 →";
+    }
+  }
+
+  // 4. Onjung API 이미지 변환 실행 로직
+  let imgBase64 = "", imgMime = "";
+  document.getElementById("photoInput").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    imgMime = file.type;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById("imgBefore").src = ev.target.result;
+      imgBase64 = ev.target.result.split(",")[1];
+      document.getElementById("fileLabel").innerText = "✅ 선택 완료: " + file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  async function runOnjungApi() {
+    const key = document.getElementById("apiKeyInput").value.trim();
+    if (!key || !imgBase64) return alert("Onjung API Key와 현장 사진을 모두 입력해 주세요.");
+    localStorage.setItem("onjung_api_key", key);
+
+    document.getElementById("apiRunBtn").disabled = true;
+    document.getElementById("apiLoading").style.display = "block";
+
+    const promptText = "Edit this exact room photo as a Level-1 Professional Home Organizer (정리수납 1급). Keep the exact same room structure, walls, window, door, flooring, lighting, and keep all existing furniture, garment racks, and clothes. Remove all clutter and scattered items from the floor so the floor is completely clean. Neatly hang all existing clothes on the racks, fold bedding and items into neat storage baskets on shelves, and organize items neatly. Realistic Korean home interior photo.";
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }, { inline_data: { mime_type: imgMime, data: imgBase64 } }] }],
+          generationConfig: { responseModalities: ["IMAGE"] }
+        })
+      });
+      const data = await res.json();
+      const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData || p.inline_data);
+      if (!part) throw new Error(data.error?.message || "변환 실패");
+      const out = part.inlineData || part.inline_data;
+      document.getElementById("imgAfter").src = `data:${out.mimeType || "image/png"};base64,${out.data}`;
+      document.getElementById("apiResultGrid").style.display = "grid";
+    } catch (err) {
+      alert("오류: " + err.message);
+    } finally {
+      document.getElementById("apiRunBtn").disabled = false;
+      document.getElementById("apiLoading").style.display = "none";
+    }
+  }
+</script>
+</body>
+</html>
