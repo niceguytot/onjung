@@ -47,17 +47,17 @@
     .hero h1 { font-size: 32px; font-weight: 700; color: var(--primary-green); margin-bottom: 16px; }
     .hero p { font-size: 16px; color: var(--text-sub); }
 
-    /* [대표님 전용] 비밀번호 잠금 Onjung API 시뮬레이터 */
     #consultantPanel {
-      display: none; background: #EDF2EE; border: 2px solid var(--primary-green);
-      border-radius: 16px; padding: 28px 20px; margin: 24px auto; max-width: 760px;
+      max-width: 1060px;
+      margin: 24px auto;
+      padding: 0 20px;
+      scroll-margin-top: 118px;
     }
-    .upload-box {
-      border: 2px dashed var(--primary-green); border-radius: 12px; padding: 28px;
-      text-align: center; background: #FFF; cursor: pointer; margin: 16px 0;
+    .simulator-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 6px;
     }
-    .result-grid { display: none; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
-    .result-grid img { width: 100%; border-radius: 10px; border: 1px solid var(--border-color); }
 
     /* 7대 공간 파스텔 카드 */
     .room-grid {
@@ -112,13 +112,119 @@
       .result-grid { grid-template-columns: 1fr; }
     }
   </style>
+  <style>
+ongyeol-simulator {
+  display: block;
+  color: #193729;
+  line-height: 1.55;
+}
+
+.og-sim {
+  background: #f1f6f0;
+  border: 1px solid #51715d;
+  border-radius: 20px;
+  padding: clamp(16px, 3vw, 32px);
+}
+
+.og-sim h2, .og-sim p, .og-comparison figure {
+  margin: 0;
+}
+
+.og-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.og-form {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.og-form label {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.og-form input, .og-form button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #789282;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.og-form input {
+  background: #fff;
+}
+
+.og-form button {
+  background: #194a35;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.og-form button:disabled {
+  opacity: .65;
+  cursor: default;
+}
+
+.og-note, .og-status {
+  font-size: .875rem;
+}
+
+.og-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.og-comparison figcaption {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.og-frame {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  background: #e0ebe2;
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: center;
+  font-size: .85rem;
+}
+
+.og-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.og-sim [hidden] {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .og-grid {
+    grid-template-columns: 1fr;
+  }
+}
+  </style>
 </head>
 <body>
 
 <header>
   <div class="logo">온결 (On-gyeol)</div>
   <div class="header-right">
-    <button class="admin-trigger" onclick="unlockConsultantMode()">🔒 Onjung API</button>
+    <button type="button" id="simulatorTrigger" class="admin-trigger" aria-controls="consultantPanel" aria-expanded="false">🔒 Onjung API</button>
     <!-- 우측 상단 즉시 스캔 가능한 QR코드 (현재 페이지 주소 자동 연결) -->
     <div class="qr-box" title="스마트폰 카메라로 스캔하면 온결 페이지가 열립니다">
       <img id="headerQrImg" src="" alt="온결 접속 QR코드" />
@@ -133,28 +239,12 @@
   <p>체계적인 공간 분석과 맞춤형 수납 시스템으로 일상의 흐름을 바꿔드립니다.</p>
 </section>
 
-<!-- [대표님 전용] Onjung API 시뮬레이터 -->
-<div id="consultantPanel">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <strong style="color:var(--primary-green); font-size:18px;">✨ Onjung API 현장 시뮬레이터</strong>
-    <button onclick="document.getElementById('consultantPanel').style.display='none'" style="border:none;background:none;cursor:pointer;">닫기 ✕</button>
+<!-- 온결 현장 시뮬레이터 -->
+<div id="consultantPanel" hidden>
+  <div class="simulator-toolbar">
+    <button type="button" id="closeSimulator" class="admin-trigger">닫기 ✕</button>
   </div>
-  <p style="font-size:13px; color:#4A5550; margin:6px 0 12px;">현장 방문 시 비포 사진을 업로드하면 정리수납 1급 애프터 시안을 즉시 생성합니다.</p>
-  
-  <input type="password" id="apiKeyInput" placeholder="Onjung API Key 입력 (최초 1회 저장)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #CCC;margin-bottom:10px;" />
-  
-  <div class="upload-box" onclick="document.getElementById('photoInput').click()">
-    <strong id="fileLabel">📸 현장 비포(Before) 사진 업로드</strong>
-    <input type="file" id="photoInput" accept="image/*" style="display:none" />
-  </div>
-
-  <button class="submit-btn" id="apiRunBtn" onclick="runOnjungApi()">Onjung API 애프터 변환 실행 →</button>
-  <p id="apiLoading" style="display:none; text-align:center; margin-top:14px; font-weight:600; color:var(--primary-green);">⏳ Onjung API가 공간을 분석하여 정돈 중입니다 (약 10~15초)...</p>
-
-  <div class="result-grid" id="apiResultGrid">
-    <div><small>BEFORE (현장)</small><img id="imgBefore" /></div>
-    <div><small>AFTER (Onjung API 완료)</small><img id="imgAfter" /></div>
-  </div>
+  <ongyeol-simulator api-url="https://ongyeol-simulator-api.ongyeol-site.workers.dev/simulate"></ongyeol-simulator>
 </div>
 
 <!-- 1. 7대 공간 파스텔 카드 -->
@@ -247,17 +337,23 @@
     document.getElementById("headerQrImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUrl}`;
   });
 
-  // 1. 대표님 전용 비밀번호 잠금 해제 (비밀번호: 1004)
-  function unlockConsultantMode() {
-    const pw = prompt("Onjung API 접근 비밀번호를 입력하세요:");
-    if (pw === "1004") {
-      document.getElementById("consultantPanel").style.display = "block";
-      const saved = localStorage.getItem("onjung_api_key");
-      if (saved) document.getElementById("apiKeyInput").value = saved;
-    } else if (pw !== null) {
-      alert("비밀번호가 일치하지 않습니다.");
+  const simulatorPanel = document.getElementById("consultantPanel");
+  const simulatorTrigger = document.getElementById("simulatorTrigger");
+  const closeSimulator = document.getElementById("closeSimulator");
+
+  function setSimulatorOpen(open) {
+    simulatorPanel.hidden = !open;
+    simulatorTrigger.setAttribute("aria-expanded", String(open));
+    if (open) {
+      closeSimulator.focus({ preventScroll: true });
+      simulatorPanel.scrollIntoView({ block: "start" });
+    } else {
+      simulatorTrigger.focus();
     }
   }
+
+  simulatorTrigger.addEventListener("click", () => setSimulatorOpen(simulatorPanel.hidden));
+  closeSimulator.addEventListener("click", () => setSimulatorOpen(false));
 
   // 2. 공간 카드 클릭 시 팁 표시
   function showRoomTip(room, tip, el) {
@@ -305,53 +401,178 @@
     }
   }
 
-  // 4. Onjung API 이미지 변환 실행 로직
-  let imgBase64 = "", imgMime = "";
-  document.getElementById("photoInput").addEventListener("change", function(e) {
-    const file = e.target.files[0];
+</script>
+<script type="module">
+const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
+
+async function preparePhoto(file) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("JPG, PNG 또는 WebP 사진을 선택해 주세요.");
+  }
+  if (file.size > MAX_SOURCE_BYTES) throw new Error("20MB 이하 사진을 선택해 주세요.");
+
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d", { alpha: false });
+  try {
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  } finally {
+    bitmap.close();
+  }
+  const photo = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
+  if (!photo || photo.size > MAX_UPLOAD_BYTES) throw new Error("더 작은 사진을 선택해 주세요.");
+  return photo;
+}
+
+class OngyeolSimulator extends HTMLElement {
+  connectedCallback() {
+    if (this.form) return;
+    this.innerHTML = `
+      <section class="og-sim">
+        <h2>온결 현장 시뮬레이터</h2>
+        <p>현장 사진 한 장으로 정리 후 모습을 살펴보세요.</p>
+        <div class="og-grid">
+          <form class="og-form" method="post">
+            <label>현장 사진 <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></label>
+            <label>직원 초대 코드 <input name="staff" type="password" autocomplete="off" pattern="[a-f0-9]{48}" required placeholder="발급받은 초대 코드"></label>
+            <p class="og-note">시안을 만들 때 사진이 OpenAI로 전송됩니다. 얼굴, 주소, 서류가 보이면 가린 뒤 올려 주세요.</p>
+            <button type="submit" disabled>정리 후 시안 만들기</button>
+            <p class="og-status" role="status" aria-live="polite"></p>
+          </form>
+          <div class="og-comparison">
+            <figure><figcaption>Before · 현장 사진</figcaption><div class="og-frame"><img alt="정리 전 현장 사진" hidden><span>현장 사진을 선택해 주세요</span></div></figure>
+            <figure><figcaption>After · AI 정리수납 시안</figcaption><div class="og-frame"><img alt="AI가 생성한 정리수납 시안" hidden><span>생성된 시안이 표시됩니다</span></div></figure>
+          </div>
+        </div>
+      </section>`;
+    this.form = this.querySelector("form");
+    this.input = this.form.elements.photo;
+    this.staff = this.form.elements.staff;
+    this.button = this.querySelector("button");
+    this.status = this.querySelector(".og-status");
+    [this.before, this.after] = this.querySelectorAll(".og-frame");
+    this.showExample(this.before, "example-before", "정리 전 예시 사진");
+    this.showExample(this.after, "example-after", "AI 정리수납 예시 시안");
+    this.input.addEventListener("change", () => this.selectPhoto());
+    this.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.submit();
+    });
+  }
+
+  disconnectedCallback() {
+    this.controller?.abort();
+    this.selection = undefined;
+    this.photo = undefined;
+    this.form?.reset();
+    if (this.status) this.status.textContent = "";
+    if (this.button) this.button.disabled = true;
+    if (this.before) this.showExample(this.before, "example-before", "정리 전 예시 사진");
+    if (this.after) this.showExample(this.after, "example-after", "AI 정리수납 예시 시안");
+  }
+
+  showImage(frame, source, description) {
+    const image = frame.querySelector("img");
+    if (image.getAttribute("src")?.startsWith("blob:")) URL.revokeObjectURL(image.src);
+    if (source) {
+      image.src = source instanceof Blob ? URL.createObjectURL(source) : source;
+      image.alt = description;
+    } else {
+      image.removeAttribute("src");
+    }
+    image.hidden = !source;
+    frame.querySelector("span").hidden = Boolean(source);
+  }
+
+  showExample(frame, attribute, description) {
+    this.showImage(frame, this.getAttribute(attribute), description);
+  }
+
+  async selectPhoto() {
+    const selection = {};
+    this.selection = selection;
+    this.photo = undefined;
+    this.button.disabled = true;
+    this.status.textContent = "";
+    this.showImage(this.after);
+    this.showImage(this.before);
+    const file = this.input.files[0];
     if (!file) return;
-    imgMime = file.type;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      document.getElementById("imgBefore").src = ev.target.result;
-      imgBase64 = ev.target.result.split(",")[1];
-      document.getElementById("fileLabel").innerText = "✅ 선택 완료: " + file.name;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  async function runOnjungApi() {
-    const key = document.getElementById("apiKeyInput").value.trim();
-    if (!key || !imgBase64) return alert("Onjung API Key와 현장 사진을 모두 입력해 주세요.");
-    localStorage.setItem("onjung_api_key", key);
-
-    document.getElementById("apiRunBtn").disabled = true;
-    document.getElementById("apiLoading").style.display = "block";
-
-    const promptText = "Edit this exact room photo as a Level-1 Professional Home Organizer (정리수납 1급). Keep the exact same room structure, walls, window, door, flooring, lighting, and keep all existing furniture, garment racks, and clothes. Remove all clutter and scattered items from the floor so the floor is completely clean. Neatly hang all existing clothes on the racks, fold bedding and items into neat storage baskets on shelves, and organize items neatly. Realistic Korean home interior photo.";
-
+    this.status.textContent = "사진을 읽고 있어요.";
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${key}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }, { inline_data: { mime_type: imgMime, data: imgBase64 } }] }],
-          generationConfig: { responseModalities: ["IMAGE"] }
-        })
-      });
-      const data = await res.json();
-      const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData || p.inline_data);
-      if (!part) throw new Error(data.error?.message || "변환 실패");
-      const out = part.inlineData || part.inline_data;
-      document.getElementById("imgAfter").src = `data:${out.mimeType || "image/png"};base64,${out.data}`;
-      document.getElementById("apiResultGrid").style.display = "grid";
-    } catch (err) {
-      alert("오류: " + err.message);
-    } finally {
-      document.getElementById("apiRunBtn").disabled = false;
-      document.getElementById("apiLoading").style.display = "none";
+      const photo = await preparePhoto(file);
+      if (this.selection !== selection) return;
+      this.photo = photo;
+      this.showImage(this.before, photo, "정리 전 현장 사진");
+      this.status.textContent = "";
+      this.button.disabled = false;
+    } catch (error) {
+      if (this.selection !== selection) return;
+      this.input.value = "";
+      this.status.textContent = error instanceof DOMException
+        ? "사진을 읽을 수 없습니다. 다른 사진을 선택해 주세요."
+        : error.message;
     }
   }
+
+  async submit() {
+    if (!this.photo || this.controller) return;
+    const endpoint = this.getAttribute("api-url");
+    if (!endpoint || !endpoint.startsWith("https://")) {
+      this.status.textContent = "시뮬레이터 서버 주소를 설정해 주세요.";
+      return;
+    }
+    const controller = new AbortController();
+    this.controller = controller;
+    this.button.disabled = true;
+    this.input.disabled = true;
+    this.staff.disabled = true;
+    this.form.setAttribute("aria-busy", "true");
+    this.status.textContent = "정리 후 시안을 만들고 있어요.";
+    this.showImage(this.after);
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "image/jpeg", Authorization: "Bearer " + this.staff.value },
+        credentials: "omit",
+        redirect: "error",
+        body: this.photo,
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(165_000)])
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        if (controller.signal.aborted) return;
+        this.status.textContent = error?.message ?? "시안을 만들 수 없습니다. 다시 시도해 주세요.";
+        if (response.status === 401) this.staff.value = "";
+        return;
+      }
+      if (response.headers.get("Content-Type") !== "image/jpeg") throw new Error("Unexpected response");
+      const result = await response.blob();
+      if (controller.signal.aborted) return;
+      this.showImage(this.after, result, "AI가 생성한 정리수납 시안");
+      this.status.textContent = "정리수납 시안이 완성됐어요.";
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      this.status.textContent = error.name === "TimeoutError"
+        ? "응답 시간이 초과됐습니다. 잠시 후 다시 시도해 주세요."
+        : "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+    } finally {
+      this.controller = undefined;
+      this.input.disabled = false;
+      this.staff.disabled = false;
+      this.button.disabled = !this.photo;
+      this.form.removeAttribute("aria-busy");
+    }
+  }
+}
+
+customElements.define("ongyeol-simulator", OngyeolSimulator);
 </script>
 </body>
 </html>
